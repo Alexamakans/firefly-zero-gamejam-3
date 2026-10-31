@@ -15,8 +15,12 @@ use crate::game::platform::Platform;
 use crate::game::position::Position;
 use crate::input::Input;
 use crate::remap_color;
+use alloc::format;
 use firefly_rust::audio::{Gain, HoldModulator, Node, ms};
-use firefly_rust::{Color, Peer, clear_screen, get_random, log_debug, read_buttons, read_pad};
+use firefly_rust::{
+    Color, FontBuf, Peer, Point, clear_screen, draw_text, get_random, load_file_buf, log_debug,
+    read_buttons, read_pad,
+};
 use goat::Goat;
 
 pub struct Game {
@@ -34,6 +38,9 @@ pub struct Game {
 
     parallax: Parallax,
     background: Background,
+
+    score: u32,
+    font: FontBuf,
 }
 
 fn mysound(parent: &Node<Gain>) {
@@ -84,6 +91,12 @@ impl Game {
 
             parallax: Parallax::new(),
             background: Background::new(),
+
+            score: 0,
+
+            font: load_file_buf("default_font")
+                .expect("failed loading default font")
+                .into(),
         }
     }
 
@@ -103,6 +116,7 @@ impl Game {
             }
         }
 
+        let old_goat_pos = self.goat.pos;
         // collision - platforms
         let goat_left = self.goat.pos + Position::new(0.0, self.goat.bounds.y);
         let goat_right = self.goat.pos + self.goat.bounds;
@@ -140,6 +154,10 @@ impl Game {
         );
 
         self.background.update(&self.camera);
+
+        if self.goat.pos.x > old_goat_pos.x {
+            self.score += (self.goat.pos.x - old_goat_pos.x) as u32;
+        }
     }
 
     pub fn render(&self) {
@@ -152,6 +170,13 @@ impl Game {
             platform.render(&self.camera);
         }
         self.goat.render(&self.camera);
+
+        draw_text(
+            &format!("score: {}", self.score),
+            &self.font,
+            Point::new(2, 12),
+            Color::Red,
+        );
     }
 
     fn generate_platform(&mut self) {

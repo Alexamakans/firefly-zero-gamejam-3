@@ -18,8 +18,8 @@ static STYLE: Style = Style {
 
 static TRIANGLE_STYLE: Style = Style {
     fill_color: Color::LightGray,
-    stroke_color: Color::None,
-    stroke_width: 0,
+    stroke_color: Color::Red,
+    stroke_width: 1,
 };
 
 impl Platform {
@@ -34,7 +34,6 @@ impl Platform {
     pub fn render(&self, camera: &Camera) {
         let p = self.pos - camera.pos;
         let d = 1.0 - (p.x - 240.0) / 300.0;
-        log_debug!("d: {:#?}", d);
         if p.x > 235.0 && d > 0.0 {
             let h = self.size.height as f32 * d;
             let w = 10.0 * d;

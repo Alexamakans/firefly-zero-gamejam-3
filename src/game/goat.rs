@@ -1,9 +1,9 @@
-use core::f32::consts::FRAC_1_SQRT_2;
-
 use firefly_rust::{
     Size,
-    audio::{self, AdsrModulator, LinearModulator, SawtoothModulator},
-    get_random, load_file_buf, log_debug,
+    audio::{
+        self, AdsrModulator, HoldModulator, LinearModulator, SawtoothModulator, SineModulator,
+    },
+    get_random, load_file_buf,
     math::abs,
 };
 
@@ -23,6 +23,7 @@ pub struct Goat {
     pub vel: Position,
     anim: Animation,
     jump_spritesheet: Spritesheet,
+    dash_spritesheet: Spritesheet,
 
     jump_t: u32,
     jumping: bool,
@@ -58,6 +59,12 @@ impl Goat {
                     .into(),
                 Size::new(25, 15),
             ),
+            dash_spritesheet: Spritesheet::new(
+                load_file_buf("goat_dash")
+                    .expect("failed loading goat jump spritesheet")
+                    .into(),
+                Size::new(25, 15),
+            ),
             bounce_frame_offset: Position::new(0.0, -6.0),
 
             jump_t: 0,
@@ -66,9 +73,11 @@ impl Goat {
             jump_tiny_factor: 0.1,
             jump_coyote_ticks: 7,
             jump_coyote_elapsed_ticks: 0,
+
             dashing_ticks: 16,
             dashing_ticks_elapsed: 100, // high to make no dash start blabla
             was_dashing: false,
+
             was_grounded: false,
             // TODO: jump buffer probably
             collides_platform: false,
@@ -107,12 +116,13 @@ impl Goat {
         if input.pressed.e {
             self.dashing_ticks_elapsed = 0;
             self.was_dashing = true;
+            self.play_dash_sound(audio);
         }
 
         let gravity = if input.held.s { 0.025 } else { 0.08 };
         let non_linearity_or_something = 0.0011 * abs(self.vel.y);
         self.vel.y += gravity + non_linearity_or_something;
-        if self.dashing_ticks_elapsed < self.dashing_ticks {
+        if self.is_dashing() {
             self.vel.x = self.dash_vel(self.dashing_ticks_elapsed);
         } else {
             if self.was_dashing {
@@ -187,6 +197,9 @@ impl Goat {
             } else {
                 self.anim.render(p);
             }
+        } else if self.is_dashing() {
+            self.dash_spritesheet
+                .render(self.dashing_ticks_elapsed as i32, p);
         } else {
             if abs(self.vel.y) < 0.1 {
                 self.jump_spritesheet.render(1, p);
@@ -268,9 +281,8 @@ impl Goat {
                 },
             );
 
-            let q = 0.707106781186547524400844362104849039f32;
             //let lp = g.add_low_pass(138.0.into(), q);
-            let n = g.add_noise(get_random() as i32);
+            g.add_noise(get_random() as i32);
 
             let a = g.add_sawtooth((140.0 + 10.0).into(), 0.0);
             a.modulate(
@@ -280,19 +292,70 @@ impl Goat {
                     period: audio::ms(10),
                 },
             );
-            let b = g.add_sawtooth((140.0 - 10.0).into(), 0.4);
+            g.add_sawtooth((140.0 - 10.0).into(), 0.4);
+        });
+    }
+
+    fn play_dash_sound(&self, audio: &mut Audio) {
+        audio.play_player_sfx(|parent: &audio::Node<audio::Gain>| {
+            let g = parent.add_gain(0.0);
+            g.modulate(
+                0.0,
+                0.4,
+                SineModulator {
+                    freq: ((16.0 / 60.0) / 4.0).into(),
+                },
+            );
+            let g2 = g.add_gain(0.0);
+            g2.modulate(
+                1.0,
+                0.0,
+                HoldModulator {
+                    time: audio::ms(((16.0 / 60.0) * 1000.0) as u32),
+                },
+            );
+            let ms_per_tick = audio::ms((1000.0 / 60.0) as u32);
+
+            let s = g2.add_sine(0.0.into(), 0.0);
+            s.modulate(
+                80.0.into(),
+                2000.0.into(),
+                AdsrModulator {
+                    attack: ms_per_tick * 3,
+                    decay: ms_per_tick * 6,
+                    sustain: ms_per_tick * 9,
+                    sustain_level: 0.3,
+                    release: ms_per_tick * 16,
+                },
+            );
+            let t = g2.add_sawtooth(0.0.into(), 0.5);
+            t.modulate(
+                80.0.into(),
+                2000.0.into(),
+                AdsrModulator {
+                    attack: ms_per_tick * 5,
+                    decay: ms_per_tick * 8,
+                    sustain: ms_per_tick * 11,
+                    sustain_level: 0.3,
+                    release: ms_per_tick * 16,
+                },
+            );
         });
     }
 
     fn dash_vel(&self, t: u32) -> f32 {
         assert!(self.dashing_ticks % 2 == 0);
         let p = 3.5;
-        if t == 0 {
+        if t < 6 {
             0.0
         } else if t < self.dashing_ticks / 2 {
             t as f32 * p
         } else {
             ((self.dashing_ticks as f32 / 2.0) * p) - ((t - (self.dashing_ticks / 2)) as f32 * p)
         }
+    }
+
+    fn is_dashing(&self) -> bool {
+        self.dashing_ticks_elapsed < self.dashing_ticks
     }
 }

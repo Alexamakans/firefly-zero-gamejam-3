@@ -63,6 +63,18 @@ impl Layer {
 
     fn update(&mut self, camera: &Camera, rightmost_platform: &Platform) {
         self.items.retain(|item| item.pos.x - camera.pos.x > -50.0);
+        for item in &mut self.items {
+            match item.kind {
+                ItemKind::Witch => {
+                    item.pos.x += 0.5;
+                }
+                ItemKind::Bat => {
+                    item.pos.x += (0.5 - ((get_random() % 100) as f32 / 100.0)) * 1.5;
+                    item.pos.y += (0.5 - ((get_random() % 100) as f32 / 100.0)) * 1.5;
+                }
+                _ => (),
+            }
+        }
         if self.ticks_elapsed % self.ticks_per_spawn == 0 {
             self.ticks_elapsed = 0;
             self.spawn(camera, rightmost_platform);

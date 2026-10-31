@@ -120,16 +120,12 @@ impl Layer {
         for p in &mut self.points {
             p.x -= dx;
         }
-        let cx = camera.pos.x;
-        log_debug!("asdf: {:#?}", self[1].x - cx);
         if self[1].x < 0.0 {
             let x = self[self.points.len() - 1].x + self.spacing;
             self[0].x = x;
             self[0].y = self.y_from_x(x);
             self.shift();
         }
-        // shift all points when rendered pos is < 0 for all
-        //
         self.prev_camera_pos = camera.pos;
     }
 

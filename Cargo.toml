@@ -1,0 +1,19 @@
+[package]
+name = "thegamemaybe"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+bench = false
+name = "gamejam3"
+path = "src/main.rs"
+test = false
+
+[dependencies]
+firefly-rust = { version = "0.17.1", features = ["alloc", "talc"] }
+
+# https://github.com/johnthagen/min-sized-rust
+[profile.release]
+opt-level = "s"  # sometimes "z" is smaller, allegedly
+strip = true
+lto = true

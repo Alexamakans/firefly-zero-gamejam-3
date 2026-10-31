@@ -1,0 +1,22 @@
+{
+  "packages": {
+    "rustup": "latest",
+    "pkg-config": "latest",
+    "openssl": "latest",
+    "gcc": "latest",
+    "binaryen": "latest",
+    "udev": {"version": "latest", "outputs": ["out", "dev"]}
+  },
+  "env": {
+    "RUSTUP_HOME": "$PWD/.devbox/rustup",
+    "CARGO_HOME": "$PWD/.devbox/cargo"
+  },
+  "shell": {
+    "init_hook": [
+      "export PATH=$CARGO_HOME/bin:$PATH",
+      "rustup default >/dev/null 2>&1 || rustup default nightly",
+      "[ -x $CARGO_HOME/bin/firefly_cli ] || cargo install --locked firefly_cli@0.20.0",
+      "ln -sf firefly_cli $CARGO_HOME/bin/ff"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+author_id = "alexamakans"
+app_id = "g5"
+author_name = "Alexamakans"
+app_name = "Ghastly Goat's Gun-Induced Ghostly Gait"
+lang = "rust"
+
+[files]
+default_font = { path = "assets/fonts/eg_6x9.fff" }
+goat = { path = "assets/images/ghostly_goat.png" }
+goat_jump = { path = "assets/images/ghostly_goat_jump.png" }
+background_props = { path = "assets/images/background_props.png" }

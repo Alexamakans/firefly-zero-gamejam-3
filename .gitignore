@@ -1,0 +1,5 @@
+.devbox/
+target/
+*.zip
+# Wayward Martian Graphics permits game use, not standalone asset redistribution.
+/assets/images/character.png

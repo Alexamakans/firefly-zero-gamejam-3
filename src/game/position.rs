@@ -25,6 +25,21 @@ impl Position {
         self.x = lerp(t, self.x, to.x);
         self.y = lerp(t, self.y, to.y);
     }
+
+    pub fn clamp_to(&mut self, min_x: f32, min_y: f32, max_x: f32, max_y: f32) {
+        if self.x < min_x {
+            self.x = min_x;
+        }
+        if self.y < min_y {
+            self.y = min_y;
+        }
+        if self.x > max_x {
+            self.x = max_x;
+        }
+        if self.y > max_y {
+            self.y = max_y;
+        }
+    }
 }
 
 impl ops::Add<Position> for Position {

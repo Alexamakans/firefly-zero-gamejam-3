@@ -2,12 +2,13 @@ mod animation;
 mod background;
 mod camera;
 mod goat;
+mod hud;
 mod macros;
 mod parallax;
 mod platform;
 mod position;
 
-use crate::audio::Audio;
+use crate::audio::music::MusicPlayer;
 use crate::game::background::Background;
 use crate::game::camera::Camera;
 use crate::game::parallax::Parallax;
@@ -15,11 +16,11 @@ use crate::game::platform::Platform;
 use crate::game::position::Position;
 use crate::input::Input;
 use crate::remap_color;
+use crate::{audio::Audio, game::hud::HUD};
 use alloc::format;
-use firefly_rust::audio::{Gain, HoldModulator, Node, ms};
 use firefly_rust::{
-    Color, FontBuf, Peer, Point, clear_screen, draw_text, get_random, load_file_buf, log_debug,
-    read_buttons, read_pad,
+    Color, FontBuf, Peer, Point, audio, clear_screen, draw_text, get_random, load_file_buf,
+    log_debug, read_buttons, read_pad,
 };
 use goat::Goat;
 
@@ -38,18 +39,13 @@ pub struct Game {
 
     parallax: Parallax,
     background: Background,
+    ticks_elapsed: u32,
 
-    score: u32,
+    music_player: MusicPlayer,
+
     font: FontBuf,
-}
-
-fn mysound(parent: &Node<Gain>) {
-    let s = parent.add_gain(0.5);
-    s.modulate(1.0, 0.0, HoldModulator { time: ms(1000) });
-    //s.add_sine((440.0 + 20.0).into(), 0.0);
-    //s.add_sine((440.0 - 20.0).into(), 0.0);
-    s.add_sawtooth((440.0 + 20.0).into(), 0.0);
-    s.add_sawtooth((440.0 - 20.0).into(), 0.0);
+    hud: HUD,
+    score: u32,
 }
 
 impl Game {
@@ -71,8 +67,10 @@ impl Game {
         Self::config_next_platform(&mut platforms, 2, 3);
 
         let camera = Camera::new(Position::zero());
+        let audio = Audio::new();
+        let music_player = MusicPlayer::new(&audio);
         Self {
-            audio: Audio::new(),
+            audio,
             input: Input {
                 old,
                 pressed: old,
@@ -82,7 +80,7 @@ impl Game {
             },
 
             camera,
-            camera_goat_offset: Position::new(-5.0, -90.0),
+            camera_goat_offset: Position::new(40.0, -90.0),
 
             goat: Goat::new(goat_pos),
             platforms,
@@ -92,17 +90,32 @@ impl Game {
             parallax: Parallax::new(),
             background: Background::new(),
 
-            score: 0,
+            ticks_elapsed: 0,
 
-            font: load_file_buf("default_font")
-                .expect("failed loading default font")
-                .into(),
+            music_player,
+
+            hud: HUD::new(),
+            font: load_file_buf("default_font").expect("woah").into(),
+            score: 0,
         }
     }
 
     pub fn update(&mut self) {
         log_debug!("------------------------------------");
         self.input.update(Peer::COMBINED);
+
+        for p in self.platforms {
+            if self.goat.pos.y > p.pos.y + 1000.0 {
+                self.goat.kill(&mut self.audio);
+            }
+        }
+
+        if self.goat.dead {
+            self.dead_update();
+            return;
+        }
+
+        self.music_player.update();
 
         for i in 0..self.platforms.len() {
             let x = self.platforms[i].pos.x - self.camera.pos.x;
@@ -124,6 +137,7 @@ impl Game {
         for p in &self.platforms {
             if p.collision(&goat_left) || p.collision(&goat_right) {
                 self.goat.collides_y = p.pos.y - self.goat.bounds.y;
+                self.goat.collided_platform = *p;
                 collides = true;
                 break;
             }
@@ -158,10 +172,29 @@ impl Game {
         if self.goat.pos.x > old_goat_pos.x {
             self.score += (self.goat.pos.x - old_goat_pos.x) as u32;
         }
+        self.music_player.update();
+        self.ticks_elapsed += 1;
+    }
+
+    pub fn dead_update(&mut self) {
+        if self.input.pressed.s
+            || self.input.pressed.e
+            || self.input.pressed.w
+            || self.input.pressed.n
+            || self.input.pressed.menu
+        {
+            audio::OUT.clear();
+            audio::OUT.reset();
+            self.reset();
+        }
     }
 
     pub fn render(&self) {
         clear_screen(Color::Blue);
+        if self.goat.dead {
+            self.dead_render();
+            return;
+        }
 
         self.background.render();
 
@@ -170,12 +203,20 @@ impl Game {
             platform.render(&self.camera);
         }
         self.goat.render(&self.camera);
+        self.hud.render(self.score, &self.goat);
+    }
 
+    pub fn dead_render(&self) {
+        self.goat.render(&self.camera);
+        self.hud.render(self.score, &self.goat);
+        let s = "press any button to play again";
+        let w = (6 * s.len()) as i32;
+        let h = 9;
         draw_text(
-            &format!("score: {}", self.score),
+            s,
             &self.font,
-            Point::new(2, 12),
-            Color::Red,
+            Point::new(120 - w / 2, 80 - h / 2),
+            Color::White,
         );
     }
 
@@ -213,5 +254,10 @@ impl Game {
         let width: f32 = (120 + get_random() % 120) as f32; // max is 240
         platforms[next_index].set_width(width as i32);
         platforms[next_index].pos = Position::new(x, y);
+    }
+
+    pub fn reset(&mut self) {
+        let g = Game::new();
+        *self = g;
     }
 }

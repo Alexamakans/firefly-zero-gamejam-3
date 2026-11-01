@@ -3,7 +3,7 @@ use core::{
     ops::{Index, IndexMut},
 };
 
-use firefly_rust::{Color, Style, draw_triangle, get_random, log_debug, math::sin};
+use firefly_rust::{Color, Style, draw_triangle, get_random, math::sin};
 
 use crate::{
     game::{camera::Camera, position::Position},
@@ -50,7 +50,7 @@ impl Background {
 }
 
 fn noise(x: f32) -> f32 {
-    sin(2.0 * x) + sin(PI * x)
+    (1.0 + sin(2.0 * x) + sin(PI * x)) / 2.0
 }
 
 static BOTTOM_Y: f32 = 160.0;

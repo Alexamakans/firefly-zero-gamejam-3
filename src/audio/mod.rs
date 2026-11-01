@@ -1,5 +1,6 @@
 use firefly_rust::audio::{self, Gain, Node};
 
+pub mod music;
 pub mod sounds;
 
 /// why? for funsies, limited to a list of 4 field => method mappings due to firefly zero's max 4
@@ -11,7 +12,7 @@ macro_rules! define_audio {
                 $field: Node<Gain>,
             )*
             #[allow(unused)]
-            music: Node<Gain>,
+            pub music: Node<Gain>,
         }
 
         impl Audio {
@@ -21,7 +22,7 @@ macro_rules! define_audio {
                     $(
                         $field: sfx.add_gain(0.25),
                     )*
-                    music: audio::OUT.add_gain(0.3),
+                    music: audio::OUT.add_gain(0.05),
                 }
             }
 

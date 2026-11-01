@@ -1,52 +1,63 @@
 use firefly_rust::audio::{self, Gain, Node};
 
 pub mod music;
-pub mod sounds;
 
-/// why? for funsies, limited to a list of 4 field => method mappings due to firefly zero's max 4
-/// children rule
-macro_rules! define_audio {
-    ($($field:ident => $method:ident),+ $(,)?) => {
-        pub struct Audio {
-            $(
-                $field: Node<Gain>,
-            )*
-            #[allow(unused)]
-            pub music: Node<Gain>,
-        }
-
-        impl Audio {
-            pub fn new() -> Self {
-                let sfx = audio::OUT.add_gain(0.7);
-                Self {
-                    $(
-                        $field: sfx.add_gain(0.25),
-                    )*
-                    music: audio::OUT.add_gain(0.05),
-                }
-            }
-
-            $(
-                /// If you modulate the parent it can't be unmodulated.
-                #[allow(unused)]
-                pub fn $method(&mut self, add_sound: impl Fn(&Node<Gain>)) {
-                    Self::play(&self.$field, add_sound);
-                }
-            )*
-
-            /// If you modulate the parent it can't be unmodulated.
-            pub fn play(parent: &Node<Gain>, add_sound: impl Fn(&Node<Gain>)) {
-                parent.clear();
-                parent.reset();
-                add_sound(parent);
-            }
+pub struct Audio {
+    generic_sfx: Node<Gain>,
+    player_sfx: Node<Gain>,
+    good_sfx: Node<Gain>,
+    bad_sfx: Node<Gain>,
+    #[allow(unused)]
+    pub music: Node<Gain>,
+}
+impl Audio {
+    pub fn new() -> Self {
+        let sfx = audio::OUT.add_gain(0.9);
+        Self {
+            generic_sfx: sfx.add_gain(0.25),
+            player_sfx: sfx.add_gain(0.25),
+            good_sfx: sfx.add_gain(0.25),
+            bad_sfx: sfx.add_gain(0.65),
+            music: audio::OUT.add_gain(0.05),
         }
     }
-}
 
-define_audio! {
-    generic_sfx => play_generic_sfx,
-    player_sfx => play_player_sfx,
-    good_sfx => play_good_sfx,
-    bad_sfx => play_bad_sfx,
+    #[doc = r" If you modulate the parent it can't be unmodulated."]
+    #[allow(unused)]
+    pub fn play_generic_sfx(&mut self, add_sound: impl Fn(&Node<Gain>)) {
+        Self::play(&self.generic_sfx, add_sound);
+    }
+
+    #[doc = r" If you modulate the parent it can't be unmodulated."]
+    #[allow(unused)]
+    pub fn play_player_sfx(&mut self, add_sound: impl Fn(&Node<Gain>)) {
+        Self::play(&self.player_sfx, add_sound);
+    }
+
+    #[doc = r" If you modulate the parent it can't be unmodulated."]
+    #[allow(unused)]
+    pub fn play_good_sfx(&mut self, add_sound: impl Fn(&Node<Gain>)) {
+        Self::play(&self.good_sfx, add_sound);
+    }
+
+    #[doc = r" If you modulate the parent it can't be unmodulated."]
+    #[allow(unused)]
+    pub fn play_bad_sfx(&mut self, add_sound: impl Fn(&Node<Gain>)) {
+        Self::play(&self.bad_sfx, add_sound);
+    }
+
+    #[doc = r" If you modulate the parent it can't be unmodulated."]
+    pub fn play(parent: &Node<Gain>, add_sound: impl Fn(&Node<Gain>)) {
+        parent.clear();
+        parent.reset();
+        add_sound(parent);
+    }
+
+    pub fn clear(&self) {
+        self.generic_sfx.clear();
+        self.player_sfx.clear();
+        self.good_sfx.clear();
+        self.bad_sfx.clear();
+        self.music.clear();
+    }
 }

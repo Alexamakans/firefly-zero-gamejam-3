@@ -4,9 +4,32 @@ author_name = "Alexamakans"
 app_name = "Ghastly Goat's Gun-Induced Ghostly Gait"
 lang = "rust"
 
+[palettes.cutscene]
+1 = 0x070708
+2 = 0x332222
+3 = 0x774433
+4 = 0xcc8855
+5 = 0x993311
+6 = 0xdd7711
+7 = 0xffdd55
+8 = 0xffff33
+9 = 0x55aa44
+10 = 0x115522
+11 = 0x44eebb
+12 = 0x3388dd
+13 = 0x5544aa
+14 = 0x555577
+15 = 0xaabbbb
+16 = 0xffffff
+
 [files]
+intro_cutscene = { path = "assets/images/intro_cutscene.png", palette = "cutscene" }
 default_font = { path = "assets/fonts/eg_6x9.fff" }
 goat = { path = "assets/images/ghostly_goat.png" }
 goat_jump = { path = "assets/images/ghostly_goat_jump.png" }
 goat_dash = { path = "assets/images/ghostly_goat_dash.png" }
 background_props = { path = "assets/images/background_props.png" }
+gunshot = { path = "assets/sfx/gunshot.wav" }
+
+[boards]
+1 = { name = "hello-scores" }

@@ -2,17 +2,13 @@ use alloc::{boxed::Box, vec, vec::Vec};
 use firefly_rust::{audio::*, get_random};
 
 use crate::audio::Audio;
-static GHOST_PITCHES: [f32; 7] = [220.0, 233.0, 311.0, 330.0, 349.0, 494.0, 622.0];
 
 pub struct MusicPlayer {
     background: Node<Gain>,
-    b: Node<Gain>,
     c: Node<Gain>,
-    d: Node<Gain>,
     t: u32,
 
     notes: Vec<Box<dyn Playable>>,
-    cur_note: usize,
 }
 
 static Q: u32 = 20;
@@ -30,9 +26,7 @@ impl MusicPlayer {
     pub fn new(audio: &Audio) -> Self {
         Self {
             background: audio.music.add_gain(0.2),
-            b: audio.music.add_gain(0.2),
-            c: audio.music.add_gain(0.2),
-            d: audio.music.add_gain(0.1),
+            c: audio.music.add_gain(0.4),
             t: 0,
 
             //notes: vec![
@@ -69,25 +63,17 @@ impl MusicPlayer {
                 [Note::A3(H3), Note::C2(H2), Note::C3(H2)];
                 []; []; [];
             ),
-            cur_note: 0,
         }
     }
 
     pub fn update(&mut self) {
         if self.t == 0 {
             self.deep_drone(&self.background);
-        } else if self.t % 60 * 20 == 0 {
-            if Self::get_random_f32_01() < 0.3 {
-                self.ghost(&self.b, 0.5 + Self::get_random_f32_01());
-            }
         }
 
-        let last_timing_t = Q * (self.notes.len() as u32 - 1);
-        let note_t = self.t % (last_timing_t + 1);
-        let timing = (note_t / Q) as usize;
-        if timing >= self.cur_note {
-            self.notes[self.cur_note].clear_then_play(&self.c);
-            self.cur_note = (self.cur_note + 1) % self.notes.len();
+        if self.t % Q == 0 {
+            let index = ((self.t / Q) as usize) % self.notes.len();
+            self.notes[index].clear_then_play(&self.c);
         }
 
         self.t += 1;
@@ -100,38 +86,19 @@ impl MusicPlayer {
         g.add_sine(58.3.into(), 0.0);
     }
 
-    fn ghost(&self, g: &Node<Gain>, time_scale: f32) {
-        g.clear();
-        g.modulate(
-            0.0,
-            0.16,
-            AdsrModulator {
-                attack: ms((2000.0 * time_scale) as u32),
-                decay: ms((4000.0 * time_scale) as u32),
-                sustain: ms((7000.0 * time_scale) as u32),
-                sustain_level: 0.4,
-                release: ms((12000.0 * time_scale) as u32),
-            },
-        );
-
-        let pitch: f32 = GHOST_PITCHES[get_random() as usize % 7];
-        let t = g.add_triangle(pitch.into(), 0.0);
-        t.modulate(
-            (pitch - 7.0).into(),
-            (pitch + 7.0).into(),
-            SineModulator {
-                freq: (0.05 + Self::get_random_f32_01() * 0.15).into(),
-            },
-        );
-    }
-
-    fn get_random_f32_01() -> f32 {
+    pub fn get_random_f32_01() -> f32 {
         get_random() as f32 / u32::MAX as f32
     }
 
-    fn get_rnd(low: u32, high: u32) -> u32 {
-        let r: u32 = get_random();
-        low + (r % (high - low))
+    pub fn reset(&mut self, audio: &mut Audio) {
+        audio.music.clear();
+        *self = MusicPlayer::new(audio);
+    }
+
+    pub fn clear(&mut self) {
+        self.background.clear();
+        self.c.clear();
+        self.t = 0;
     }
 }
 
@@ -141,6 +108,7 @@ trait Playable {
 }
 
 #[derive(Clone, Copy)]
+#[allow(unused)]
 enum Note {
     C2(u32),
     CS2(u32),
@@ -374,9 +342,7 @@ impl Note {
 
 impl Playable for Note {
     fn play(&self, out: &Node<Gain>) {
-        out.set(0.33);
         let freq = self.freq();
-        let subfreq = freq / 2.0;
         let supfreq = freq * 2.0;
 
         let rnd_variance = 0.95 - 0.1 * MusicPlayer::get_random_f32_01();
@@ -393,9 +359,8 @@ impl Playable for Note {
             },
         );
 
-        let s = out.add_sine((freq * rnd_variance).into(), 0.0);
-        let subs = out.add_sine((subfreq * rnd_variance).into(), 0.141414141414);
-        let sups = out.add_triangle((supfreq * rnd_variance).into(), 0.737373737373);
+        out.add_sine((freq * rnd_variance).into(), 0.0);
+        out.add_triangle((supfreq * rnd_variance).into(), 0.737373737373);
     }
 
     fn clear_then_play(&self, out: &Node<Gain>) {
@@ -416,55 +381,56 @@ impl Playable for [Note; 0] {
 
 impl Playable for [Note; 1] {
     fn play(&self, out: &Node<Gain>) {
-        self[0].play(out);
+        self[0].play(&out.add_gain(1.0));
     }
 
     fn clear_then_play(&self, out: &Node<Gain>) {
-        self[0].play(out);
+        out.clear();
+        self[0].play(&out.add_gain(1.0));
     }
 }
 
 impl Playable for [Note; 2] {
     fn play(&self, out: &Node<Gain>) {
-        self[0].play(out);
-        self[1].play(out);
+        self[0].play(&out.add_gain(0.5));
+        self[1].play(&out.add_gain(0.5));
     }
 
     fn clear_then_play(&self, out: &Node<Gain>) {
-        self[0].clear_then_play(out);
-        self[0].play(out);
-        self[1].play(out);
+        out.clear();
+        self[0].play(&out.add_gain(0.5));
+        self[1].play(&out.add_gain(0.5));
     }
 }
 
 impl Playable for [Note; 3] {
     fn play(&self, out: &Node<Gain>) {
-        self[0].play(out);
-        self[1].play(out);
-        self[2].play(out);
+        self[0].play(&out.add_gain(1.0 / 3.0));
+        self[1].play(&out.add_gain(1.0 / 3.0));
+        self[2].play(&out.add_gain(1.0 / 3.0));
     }
 
     fn clear_then_play(&self, out: &Node<Gain>) {
-        self[0].clear_then_play(out);
-        self[0].play(out);
-        self[1].play(out);
-        self[2].play(out);
+        out.clear();
+        self[0].play(&out.add_gain(1.0 / 3.0));
+        self[1].play(&out.add_gain(1.0 / 3.0));
+        self[2].play(&out.add_gain(1.0 / 3.0));
     }
 }
 
 impl Playable for [Note; 4] {
     fn play(&self, out: &Node<Gain>) {
-        self[0].play(out);
-        self[1].play(out);
-        self[2].play(out);
-        self[3].play(out);
+        self[0].play(&out.add_gain(0.25));
+        self[1].play(&out.add_gain(0.25));
+        self[2].play(&out.add_gain(0.25));
+        self[3].play(&out.add_gain(0.25));
     }
 
     fn clear_then_play(&self, out: &Node<Gain>) {
-        self[0].clear_then_play(out);
-        self[0].play(out);
-        self[1].play(out);
-        self[2].play(out);
-        self[3].play(out);
+        out.clear();
+        self[0].play(&out.add_gain(0.25));
+        self[1].play(&out.add_gain(0.25));
+        self[2].play(&out.add_gain(0.25));
+        self[3].play(&out.add_gain(0.25));
     }
 }

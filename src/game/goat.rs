@@ -1,8 +1,7 @@
 use firefly_rust::{
     Size,
     audio::{
-        self, AdsrModulator, HoldModulator, LinearModulator, Sawtooth, SawtoothModulator,
-        SineModulator,
+        self, AdsrModulator, HoldModulator, LinearModulator, SawtoothModulator, SineModulator,
     },
     get_random, load_file_buf,
     math::{abs, sqrt},
@@ -28,7 +27,7 @@ pub struct Goat {
     dash_spritesheet: Spritesheet,
 
     jump: JumpController,
-    dash: DashController,
+    pub dash: DashController,
 
     bounce_frame_offset: Position,
 
@@ -87,7 +86,7 @@ impl Goat {
             if self.dash.was_dashing {
                 self.dash.was_dashing = false;
             }
-            self.vel.x = 2.35 + sqrt(self.pos.x) * 0.025;
+            self.vel.x = 1.65 + sqrt(self.pos.x) * 0.035;
         }
 
         let gravity = if input.held.s { 0.025 } else { 0.08 };
@@ -125,15 +124,15 @@ impl Goat {
 
     pub fn render(&self, camera: &Camera) {
         let p = self.pos - camera.pos;
-        if self.is_grounded() {
+        if self.dash.is_dashing() {
+            self.dash_spritesheet
+                .render(self.dash.ticks_elapsed as i32, p);
+        } else if self.is_grounded() {
             if self.anim.get_frame() == 1 {
                 self.anim.render(p + self.bounce_frame_offset);
             } else {
                 self.anim.render(p);
             }
-        } else if self.dash.is_dashing() {
-            self.dash_spritesheet
-                .render(self.dash.ticks_elapsed as i32, p);
         } else {
             if abs(self.vel.y) < 0.1 {
                 self.jump_spritesheet.render(1, p);
@@ -160,7 +159,7 @@ impl Goat {
     }
 
     fn play_land_sound(&self, audio: &mut Audio) {
-        audio.play_player_sfx(|parent: &audio::Node<audio::Gain>| {
+        audio.play_bad_sfx(|parent: &audio::Node<audio::Gain>| {
             let g = parent.add_gain(0.0);
             g.modulate(
                 0.15,
@@ -399,7 +398,7 @@ fn boing(audio: &mut Audio, gain: f32, freq_offset: f32, duration_scale: f32) {
     });
 }
 
-struct DashController {
+pub struct DashController {
     ticks: u32,
     ticks_elapsed: u32,
     was_dashing: bool,
@@ -429,11 +428,12 @@ impl DashController {
         }
         if self.is_dashing() {
             vel.x = self.dash_vel(self.ticks_elapsed);
+            vel.y = 0.0;
         }
     }
 
     fn play_sound(&self, audio: &mut Audio) {
-        audio.play_player_sfx(|parent: &audio::Node<audio::Gain>| {
+        audio.play_good_sfx(|parent: &audio::Node<audio::Gain>| {
             let g = parent.add_gain(0.0);
             g.modulate(
                 0.0,
@@ -491,7 +491,7 @@ impl DashController {
         }
     }
 
-    fn is_dashing(&self) -> bool {
+    pub fn is_dashing(&self) -> bool {
         self.ticks_elapsed < self.ticks
     }
 

@@ -1,7 +1,5 @@
 use alloc::format;
-use firefly_rust::{
-    Color, FontBuf, Point, Style, draw_circle, draw_text, load_file_buf, log_debug,
-};
+use firefly_rust::{Color, FontBuf, Point, Style, draw_circle, draw_text, load_file_buf};
 
 use crate::game::goat::Goat;
 
@@ -39,7 +37,6 @@ impl HUD {
         );
 
         let data = goat.get_hud_data();
-        log_debug!("datttt: {:#?}", data);
         {
             let base_p = Point::new(0, 20);
             for i in 0..data.jumps_max {

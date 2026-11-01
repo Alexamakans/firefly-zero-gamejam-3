@@ -17,4 +17,8 @@ impl Input {
         self.old = buttons;
         self.pad = read_pad(peer);
     }
+
+    pub fn is_any_pressed(&self) -> bool {
+        self.pressed.w || self.pressed.e || self.pressed.s || self.pressed.n || self.pressed.menu
+    }
 }

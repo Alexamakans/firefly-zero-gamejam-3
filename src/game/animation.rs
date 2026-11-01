@@ -1,7 +1,7 @@
 use firefly_rust::{Image, ImageBuf, Point, Size, SubImage, draw_sub_image, load_file_buf};
 
 pub struct Spritesheet {
-    img: ImageBuf,
+    pub img: ImageBuf,
     cell_size: Size,
 }
 

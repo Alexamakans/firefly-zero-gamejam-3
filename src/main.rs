@@ -18,7 +18,7 @@ fn state() -> &'static mut Game {
 
 #[unsafe(no_mangle)]
 extern "C" fn boot() {
-    let game = Game::new();
+    let game = Game::new(true);
     let ptr = &raw mut STATE;
     unsafe { (*ptr).set(game).ok() };
 }

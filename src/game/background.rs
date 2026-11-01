@@ -16,10 +16,6 @@ pub struct Background {
 
 impl Background {
     pub fn new() -> Self {
-        remap_color!(
-            Color::LightGreen => 163,194,186,
-            Color::DarkBlue => 54,55,43,
-        );
         Self {
             layers: [
                 Layer::new(64.0, 110.0, 180.0, 1.0, Color::DarkGray, Color::Gray, 0.04),
@@ -34,6 +30,13 @@ impl Background {
                 ),
             ],
         }
+    }
+
+    pub fn set_palette(&self) {
+        remap_color!(
+            Color::LightGreen => 163,194,186,
+            Color::DarkBlue => 54,55,43,
+        );
     }
 
     pub fn update(&mut self, camera: &Camera) {
@@ -54,8 +57,6 @@ fn noise(x: f32) -> f32 {
 }
 
 static BOTTOM_Y: f32 = 160.0;
-static GAME_WIDTH: f32 = 240.0;
-static HALF_GAME_WIDTH: f32 = GAME_WIDTH / 2.0;
 static NUM_POINTS: usize = 16;
 struct Layer {
     prev_camera_pos: Position,

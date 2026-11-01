@@ -22,7 +22,7 @@ use crate::{audio::Audio, game::hud::HUD};
 use firefly_rust::audio::{AdsrModulator, LinearModulator};
 use firefly_rust::{
     Color, FontBuf, Peer, Point, audio, clear_screen, draw_text, get_random, load_file_buf,
-    log_debug, read_buttons, read_pad,
+    read_buttons, read_pad,
 };
 use goat::Goat;
 

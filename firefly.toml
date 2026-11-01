@@ -30,6 +30,3 @@ goat_jump = { path = "assets/images/ghostly_goat_jump.png" }
 goat_dash = { path = "assets/images/ghostly_goat_dash.png" }
 background_props = { path = "assets/images/background_props.png" }
 gunshot = { path = "assets/sfx/gunshot.wav" }
-
-[boards]
-1 = { name = "hello-scores" }

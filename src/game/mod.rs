@@ -198,14 +198,6 @@ impl Game {
         self.parallax
             .update(&self.camera, &self.platforms[rightmost_platform_index]);
 
-        log_debug!("--------------------------------");
-        log_debug!("goat_pos = {:#?}", self.goat.pos);
-        log_debug!("camera_goat_offset = {:#?}", self.camera_goat_offset);
-        log_debug!("goat_vel = {:#?}", self.goat.vel);
-        log_debug!(
-            "- <stuff> = {:#?}",
-            self.camera_goat_offset * self.goat.vel * 0.08
-        );
         if self.goat.dash.is_dashing() {
             self.camera.pos.lerp(
                 0.09,
@@ -217,7 +209,6 @@ impl Game {
                 self.goat.pos + self.camera_goat_offset + self.goat.vel * 15.0,
             );
         }
-        log_debug!("camera.pos = {:#?}", self.camera.pos);
 
         self.background.update(&self.camera);
 

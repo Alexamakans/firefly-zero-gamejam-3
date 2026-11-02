@@ -51,7 +51,8 @@ impl Parallax {
                     continue;
                 }
                 let r2 = item.kind.get_radius() + r;
-                if pos.dist_sq(&item.pos) < r2 * r2 {
+                let center = item.pos + Position::from(item.kind.get_size()) / 2.0;
+                if pos.dist_sq(&center) < r2 * r2 {
                     on_collision(item);
                 }
             }
@@ -197,9 +198,9 @@ impl<'a> ItemKind {
             16.0
         } else {
             if s.width > s.height {
-                s.width as f32
+                s.width as f32 / 2.0
             } else {
-                s.height as f32
+                s.height as f32 / 2.0
             }
         }
     }

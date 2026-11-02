@@ -219,8 +219,10 @@ impl Game {
         self.ticks_elapsed += 1;
 
         let mut make_sound = false;
-        self.parallax
-            .on_collision(self.goat.pos, 15.0, &mut |item: &mut Item| {
+        self.parallax.on_collision(
+            self.goat.pos + self.goat.bounds / 2.0,
+            15.0,
+            &mut |item: &mut Item| {
                 match item.kind {
                     parallax::ItemKind::Pumpkin => (),
                     parallax::ItemKind::Witch => {
@@ -244,7 +246,8 @@ impl Game {
                         }
                     }
                 };
-            });
+            },
+        );
         if make_sound {
             self.play_points_sound();
         }
